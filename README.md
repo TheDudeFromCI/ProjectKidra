@@ -27,6 +27,21 @@ sinusoidal positions encode token order, and attention remains local. Configure
 the number of heads and context window with `MoEConfig`, then use `Trainer`
 with token inputs and same-shaped next-token targets to train the model.
 
+## Continuous byte-level training
+
+The stream trainer reads a text corpus as UTF-8 bytes, predicts the next byte,
+and wraps to the beginning at EOF. Model and optimizer state are periodically
+saved so training can resume:
+
+```sh
+python -m project_kidra.continuous_train corpus.txt --checkpoint kidra.pt
+python -m project_kidra.continuous_train corpus.txt --checkpoint kidra.pt --resume --steps 1000
+```
+
+Training runs indefinitely unless `--steps` is set. This prototype uses the
+existing fixed-size MoE architecture; it does not implement mini-AGI's dynamic
+capacity growth or disk/VRAM expert paging.
+
 ## License
 
 MIT – see [LICENSE](LICENSE).
