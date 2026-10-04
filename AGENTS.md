@@ -7,6 +7,7 @@
 
 ## Code Style
 - Always use strict typing.
+- Use object-oriented programming.
 - Priorize smaller, modular files. One class per file, (unless they are incredibly tiny)
 - Use dependency injection for easier testing.
   - *Especially* when interacting with libraries such as Pytorch, Chroma, or any web apis.
