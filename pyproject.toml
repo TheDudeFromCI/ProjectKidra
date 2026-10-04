@@ -1,0 +1,30 @@
+[project]
+name = "project-kidra"
+version = "0.1.0"
+description = "Project Kidra: an experimental AI agent driven by emotional reasoning."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["torch", "numpy"]
+
+[project.optional-dependencies]
+vector = ["chromadb"]
+dev = ["pytest", "pytest-cov", "mypy", "ruff"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["project_kidra*"]
+
+[tool.mypy]
+strict = true
+files = ["project_kidra", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
