@@ -4,14 +4,14 @@ from pathlib import Path
 
 import torch
 
-from project_kidra.moe.byte_corpus import ByteCorpus
+from project_kidra.moe.token_corpus import TokenCorpus
 from project_kidra.moe.trainer import TrainStepResult, Trainer
 
 
 class ContinuousTrainer:
-    """Repeatedly trains a model on a cycling byte stream and saves resumable state."""
+    """Repeatedly trains a model on a cycling token stream and saves resumable state."""
 
-    def __init__(self, trainer: Trainer, corpus: ByteCorpus) -> None:
+    def __init__(self, trainer: Trainer, corpus: TokenCorpus) -> None:
         """Create a continuous trainer using injected model, optimizer, and corpus."""
 
         self.trainer = trainer
@@ -57,7 +57,7 @@ class ContinuousTrainer:
                 "optimizer": self.trainer.optimizer.state_dict(),
                 "step": self.step,
                 "corpus_path": str(self.corpus.path.resolve()),
-                "corpus_size": self.corpus.size_bytes,
+                "corpus_size": self.corpus.size,
                 "corpus_offset": self.corpus.tell(),
             },
             Path(path),
@@ -80,10 +80,10 @@ class ContinuousTrainer:
             raise ValueError("checkpoint has an invalid training step")
         if checkpoint.get("corpus_path") != str(self.corpus.path.resolve()):
             raise ValueError("checkpoint corpus path does not match the current corpus")
-        if checkpoint.get("corpus_size") != self.corpus.size_bytes:
+        if checkpoint.get("corpus_size") != self.corpus.size:
             raise ValueError("checkpoint corpus size does not match the current corpus")
         offset = checkpoint.get("corpus_offset")
-        if not isinstance(offset, int) or not 0 <= offset < self.corpus.size_bytes:
+        if not isinstance(offset, int) or not 0 <= offset < self.corpus.size:
             raise ValueError("checkpoint has an invalid corpus offset")
         self.trainer.model.load_state_dict(checkpoint["model"])
         self.trainer.optimizer.load_state_dict(checkpoint["optimizer"])

@@ -27,10 +27,23 @@ sinusoidal positions encode token order, and attention remains local. Configure
 the number of heads and context window with `MoEConfig`, then use `Trainer`
 with token inputs and same-shaped next-token targets to train the model.
 
-## Continuous byte-level training
+## Continuous token-level training
 
-The stream trainer reads a text corpus as UTF-8 bytes, predicts the next byte,
-and wraps to the beginning at EOF. Model and optimizer state are periodically
+The stream trainer tokenizes a text corpus with the word-level `Tokenizer`
+(10k words plus `<|pad|>`, `<|unk|>`, `<|tool_begin|>`, `<|tool_end|>`), predicts the
+next token, and wraps to the beginning at the end. Out-of-vocabulary words become `<|unk|>`.
+
+### Building a corpus
+
+```sh
+python -m project_kidra.build_corpus texts/ more.txt --output corpus.npy   # dirs are searched for *.txt
+python -m project_kidra.continuous_train corpus.npy --checkpoint kidra.pt
+```
+
+`build_corpus` writes `corpus.npy` plus a `corpus.json` sidecar (token counts, unknown
+rate, sources, tokenizer fingerprint). `continuous_train` loads a `.npy` corpus directly
+and refuses it if the tokenizer vocabulary has changed; any other file is tokenized
+as raw text at startup. Model and optimizer state are periodically
 saved so training can resume:
 
 ```sh

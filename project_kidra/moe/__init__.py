@@ -7,11 +7,11 @@ from project_kidra.moe.model import MoEModel
 from project_kidra.moe.moe_layer import MoELayer
 from project_kidra.moe.router import Router, RouterOutput
 from project_kidra.moe.trainer import Trainer, TrainStepResult
-from project_kidra.moe.byte_corpus import ByteCorpus
+from project_kidra.moe.token_corpus import TokenCorpus
 from project_kidra.moe.continuous_trainer import ContinuousTrainer
 
 __all__ = [
-    "ByteCorpus",
+    "TokenCorpus",
     "ContinuousTrainer",
     "Expert",
     "CausalSelfAttention",
