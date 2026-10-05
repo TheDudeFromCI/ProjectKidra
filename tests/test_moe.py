@@ -7,10 +7,12 @@ from project_kidra.moe import (
     MoELayer,
     MoEModel,
     Router,
-    Trainer,
 )
+from project_kidra.training import Trainer
 
-CFG = MoEConfig(vocab_size=16, d_model=16, d_hidden=32, num_experts=4, top_k=2, num_layers=2)
+CFG = MoEConfig(
+    vocab_size=16, d_model=16, d_hidden=32, num_experts=4, top_k=2, num_layers=2
+)
 
 
 def test_config_rejects_bad_top_k() -> None:
@@ -39,7 +41,6 @@ def test_attention_masks_future_and_out_of_window_tokens() -> None:
     revised = attention(changed)
     assert torch.allclose(baseline[0, 2], revised[0, 2])
     assert torch.allclose(baseline[0, 3], revised[0, 3])
-
 
 
 def test_router_weights_normalized_and_aux_positive() -> None:

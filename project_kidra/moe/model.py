@@ -3,7 +3,7 @@ from torch import nn
 
 from project_kidra.moe.attention import CausalSelfAttention
 from project_kidra.moe.config import MoEConfig
-from project_kidra.moe.moe_layer import MoELayer
+from project_kidra.moe.layer import MoELayer
 
 
 class MoEModel(nn.Module):
@@ -54,11 +54,15 @@ class MoEModel(nn.Module):
     ) -> torch.Tensor:
         """Create sinusoidal absolute positions for any sequence length."""
 
-        positions = torch.arange(seq_len, device=reference.device, dtype=reference.dtype)
+        positions = torch.arange(
+            seq_len, device=reference.device, dtype=reference.dtype
+        )
         dimensions = torch.arange(
             0, d_model, 2, device=reference.device, dtype=reference.dtype
         )
-        scales = torch.exp(dimensions * (-torch.log(reference.new_tensor(10000.0)) / d_model))
+        scales = torch.exp(
+            dimensions * (-torch.log(reference.new_tensor(10000.0)) / d_model)
+        )
         angles = positions[:, None] * scales[None, :]
         encoding = reference.new_zeros((seq_len, d_model))
         encoding[:, 0::2] = torch.sin(angles)

@@ -33,3 +33,7 @@ htmlcov/
 # IDEs
 .idea/
 .vscode/
+
+corpus.json
+corpus.npy
+*.pt

@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from project_kidra.moe.corpus_file import CorpusFile
-from project_kidra.tokenizer import Tokenizer
+from project_kidra.corpus.file import CorpusFile
+from project_kidra.corpus.tokenizer import Tokenizer
 
 
 class TokenCorpus:
@@ -43,7 +43,9 @@ class TokenCorpus:
         """Tokenize a raw text file at load time (unknown words become `<|unk|>`)."""
 
         text = Path(path).read_text(encoding="utf-8")
-        ids = torch.tensor(tokenizer.tokenize(text, keep_unknown=True), dtype=torch.long)
+        ids = torch.tensor(
+            tokenizer.tokenize(text, keep_unknown=True), dtype=torch.long
+        )
         return cls(ids, context_window, path, device)
 
     @classmethod
@@ -57,7 +59,12 @@ class TokenCorpus:
         """Load a corpus written by `CorpusBuilder`, validating it against the tokenizer."""
 
         ids, _ = CorpusFile.load(path, tokenizer)
-        return cls(torch.from_numpy(np.asarray(ids, dtype=np.int64)), context_window, path, device)
+        return cls(
+            torch.from_numpy(np.asarray(ids, dtype=np.int64)),
+            context_window,
+            path,
+            device,
+        )
 
     @classmethod
     def open(

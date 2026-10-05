@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 
-from project_kidra.tokenizer import Tokenizer
+from project_kidra.corpus.tokenizer import Tokenizer
 
 
 @dataclass(frozen=True)
@@ -32,9 +32,15 @@ class CorpusFile:
     def save(path: str | Path, ids: list[int], metadata: CorpusMetadata) -> None:
         """Write token ids (as uint16/uint32) and metadata."""
 
-        dtype = np.uint16 if metadata.vocab_size <= np.iinfo(np.uint16).max + 1 else np.uint32
+        dtype = (
+            np.uint16
+            if metadata.vocab_size <= np.iinfo(np.uint16).max + 1
+            else np.uint32
+        )
         np.save(Path(path), np.asarray(ids, dtype=dtype))
-        CorpusFile.metadata_path(path).write_text(json.dumps(asdict(metadata), indent=2))
+        CorpusFile.metadata_path(path).write_text(
+            json.dumps(asdict(metadata), indent=2)
+        )
 
     @staticmethod
     def load(

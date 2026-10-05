@@ -1,6 +1,5 @@
 import torch
-from project_kidra.config import Config
-from project_kidra.model import AgentModel
+from project_kidra.model import Config, AgentModel
 
 
 def validate_torch() -> bool:
@@ -22,9 +21,11 @@ def main() -> int:
         return 1
     print("PyTorch CUDA validation succeeded.")
 
-    config = Config()
-    config.debug = True
-    config.database_url = "sqlite:///project_kidra.db"
+    config = Config(
+        debug=True,
+        database_url="sqlite:///project_kidra.db",
+        model_path="models/agent_model.pt",
+    )
 
     model = AgentModel(config)
 

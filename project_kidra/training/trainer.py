@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from project_kidra.moe.model import MoEModel
+from project_kidra.moe import MoEModel
 
 
 @dataclass(frozen=True)
@@ -29,7 +29,9 @@ class Trainer:
 
         self.model = model
         self.optimizer = optimizer
-        self.loss_fn: nn.Module = loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
+        self.loss_fn: nn.Module = (
+            loss_fn if loss_fn is not None else nn.CrossEntropyLoss()
+        )
         self.max_grad_norm = max_grad_norm
 
     def _losses(
@@ -41,7 +43,9 @@ class Trainer:
         task = self.loss_fn(logits.reshape(-1, logits.shape[-1]), targets.reshape(-1))
         return task + self.model.config.aux_loss_weight * aux, task, aux
 
-    def train_step(self, inputs: torch.Tensor, targets: torch.Tensor) -> TrainStepResult:
+    def train_step(
+        self, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> TrainStepResult:
         """Perform one gradient update on a batch of token ids."""
 
         self.model.train()

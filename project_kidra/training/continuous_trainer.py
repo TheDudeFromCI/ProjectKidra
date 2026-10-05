@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from project_kidra.moe.token_corpus import TokenCorpus
-from project_kidra.moe.trainer import TrainStepResult, Trainer
+from project_kidra.corpus import TokenCorpus
+from project_kidra.training.trainer import TrainStepResult, Trainer
 
 
 class ContinuousTrainer:
@@ -24,8 +24,13 @@ class ContinuousTrainer:
         checkpoint_path: str | Path | None = None,
         checkpoint_interval: int = 1000,
         on_step: Callable[[int, TrainStepResult], None] | None = None,
+        on_checkpoint: Callable[[int, torch.Tensor], None] | None = None,
     ) -> int:
-        """Train indefinitely, or for max_steps, periodically saving checkpoints."""
+        """Train indefinitely, or for max_steps, periodically saving checkpoints.
+
+        on_checkpoint is called after each periodic save with the step and the
+        latest input batch.
+        """
 
         if max_steps is not None and max_steps < 1:
             raise ValueError("max_steps must be positive or None")
@@ -42,6 +47,8 @@ class ContinuousTrainer:
                 on_step(self.step, result)
             if checkpoint_path is not None and self.step % checkpoint_interval == 0:
                 self.save_checkpoint(checkpoint_path)
+                if on_checkpoint is not None:
+                    on_checkpoint(self.step, inputs)
 
         if checkpoint_path is not None:
             self.save_checkpoint(checkpoint_path)

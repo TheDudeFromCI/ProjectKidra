@@ -1,10 +1,6 @@
 """Pytorch model classes for the ProjectKidra agent."""
 
-from project_kidra.config import Config
+from project_kidra.model.model import AgentModel
+from project_kidra.model.config import Config
 
-class AgentModel:
-    """The primary model representing an agent."""
-
-
-    def __init__(self, config: Config):
-        self.config = config
+__all__ = ["AgentModel", "Config"]

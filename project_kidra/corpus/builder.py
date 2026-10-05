@@ -1,8 +1,8 @@
 from collections.abc import Iterable
 from pathlib import Path
 
-from project_kidra.moe.corpus_file import CorpusFile, CorpusMetadata
-from project_kidra.tokenizer import UNK_TOKEN, Tokenizer
+from project_kidra.corpus.file import CorpusFile, CorpusMetadata
+from project_kidra.corpus.tokenizer import Tokenizer, UNK_TOKEN
 
 
 class CorpusBuilder:
@@ -14,7 +14,9 @@ class CorpusBuilder:
         self.tokenizer = tokenizer
 
     @staticmethod
-    def find_sources(inputs: Iterable[str | Path], pattern: str = "*.txt") -> list[Path]:
+    def find_sources(
+        inputs: Iterable[str | Path], pattern: str = "*.txt"
+    ) -> list[Path]:
         """Expand files and directories (recursively, by glob pattern) into a sorted file list."""
 
         files: list[Path] = []
@@ -36,9 +38,11 @@ class CorpusBuilder:
         ids: list[int] = []
         for source in sources:
             ids.extend(
-                self.tokenizer.tokenize(source.read_text(encoding="utf-8"), keep_unknown=True)
+                self.tokenizer.tokenize(
+                    source.read_text(encoding="utf-8"), keep_unknown=True
+                )
             )
-        unk = self.tokenizer.special_id(UNK_TOKEN)
+        unk = self.tokenizer.token_id(UNK_TOKEN)
         metadata = CorpusMetadata(
             vocab_size=self.tokenizer.vocab_size(),
             tokenizer_fingerprint=self.tokenizer.fingerprint(),

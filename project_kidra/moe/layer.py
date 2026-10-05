@@ -8,12 +8,16 @@ from project_kidra.moe.router import Router
 class MoELayer(nn.Module):
     """Sparse MoE feed-forward layer: each token is processed by its top-k experts."""
 
-    def __init__(self, d_model: int, d_hidden: int, num_experts: int, top_k: int) -> None:
+    def __init__(
+        self, d_model: int, d_hidden: int, num_experts: int, top_k: int
+    ) -> None:
         """Build the router and the experts."""
 
         super().__init__()
         self.router = Router(d_model, num_experts, top_k)
-        self.experts = nn.ModuleList(Expert(d_model, d_hidden) for _ in range(num_experts))
+        self.experts = nn.ModuleList(
+            Expert(d_model, d_hidden) for _ in range(num_experts)
+        )
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return (output, aux_loss) for a (batch, seq, d_model) input."""

@@ -22,6 +22,11 @@
     return variable
   ```
 - Add comments **only** when the purpose of certain code is not obvious.
+- Project should be organized into submodules, where reasonable.
+  - If a new file doesn't quite fit with existing modules, create a new one.
+  - Modules should be small to moderately sized in scope.
+  - Broad-scale modules should be subdivided into child modules.
+  - Try to keep modules ten python files or less.
 
 ## Testing Style
 - Make sure all code is tested where reasonable.

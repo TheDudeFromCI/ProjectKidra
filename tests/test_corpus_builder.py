@@ -2,18 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from project_kidra.moe import TokenCorpus
-from project_kidra.moe.corpus_builder import CorpusBuilder
-from project_kidra.moe.corpus_file import CorpusFile
-from project_kidra.tokenizer import Tokenizer
+from project_kidra.corpus import CorpusBuilder, CorpusFile, TokenCorpus, Tokenizer
 
 
 def _tokenizer(words: list[str] | None = None) -> Tokenizer:
     """Build a tiny tokenizer so tests don't depend on the full vocabulary."""
 
-    tokenizer = Tokenizer()
-    tokenizer.tokens = words or ["a", "b", "c", "d", "e"]
-    return tokenizer
+    return Tokenizer(words or ["apple", "banana", "orange", "red", "blue", "green"])
 
 
 def test_find_sources_expands_directories_and_rejects_missing(tmp_path: Path) -> None:
@@ -33,7 +28,7 @@ def test_build_then_load_round_trips_and_counts_unknown(tmp_path: Path) -> None:
     """A built corpus loads back with identical ids and accurate metadata."""
 
     source = tmp_path / "in.txt"
-    source.write_text("a b zzz c d e a b c")
+    source.write_text("apple banana zzz red green!")
     out = tmp_path / "corpus.npy"
     tokenizer = _tokenizer()
     metadata = CorpusBuilder(tokenizer).build([source], out)
@@ -42,8 +37,16 @@ def test_build_then_load_round_trips_and_counts_unknown(tmp_path: Path) -> None:
 
     corpus = TokenCorpus.open(out, context_window=3, tokenizer=tokenizer)
     inputs, targets = corpus.next_batch()
-    assert inputs.tolist() == [[0, 1, tokenizer.vocab_size() - 3]]
-    assert targets.tolist() == [[1, tokenizer.vocab_size() - 3, 2]]
+    assert [tokenizer.get_token(token_id) for token_id in inputs[0].tolist()] == [
+        "apple",
+        "banana",
+        "<|name|>",
+    ]
+    assert [tokenizer.get_token(token_id) for token_id in targets[0].tolist()] == [
+        "banana",
+        "<|name|>",
+        "z",
+    ]
 
 
 def test_load_rejects_changed_tokenizer_and_missing_metadata(tmp_path: Path) -> None:
