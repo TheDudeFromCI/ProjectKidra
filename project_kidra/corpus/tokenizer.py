@@ -60,7 +60,11 @@ class Tokenizer:
 
         self._no_space: set[int] = set(
             [
-                *[self._index[token] for token in SPECIAL_TOKENS],
+                *[
+                    self._index[token]
+                    for token in SPECIAL_TOKENS
+                    if token != NAME_BEGIN
+                ],
                 *[self._index[letter] for letter in LETTER_TOKENS],
                 *[
                     self._index[token]

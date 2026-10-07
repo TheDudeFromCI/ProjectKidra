@@ -10,7 +10,11 @@ class Expert(nn.Module):
 
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(d_model, d_hidden), nn.GELU(), nn.Linear(d_hidden, d_model)
+            nn.Linear(d_model, d_hidden),
+            nn.Dropout(0.1),
+            nn.GELU(),
+            nn.Linear(d_hidden, d_model),
+            nn.Dropout(0.1),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

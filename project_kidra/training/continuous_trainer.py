@@ -96,3 +96,9 @@ class ContinuousTrainer:
         self.trainer.optimizer.load_state_dict(checkpoint["optimizer"])
         self.corpus.seek(offset)
         self.step = step
+
+        print(f"Checkpoint loaded from path: {path}")
+        print(f"Loaded checkpoint at step {self.step} with corpus offset {offset}")
+        print(
+            f"Loaded model with {sum(p.numel() for p in self.trainer.model.parameters())} parameters"
+        )
