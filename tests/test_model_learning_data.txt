@@ -1,0 +1,46 @@
+# Synthetic data for tests/test_model_learning.py.
+# local: bos p d p d ...; each 'd' must be followed by p, found by attending to earlier context.
+# echo: <window A> => <window B>; B's target at each step is A's previous token (needs the other window).
+local <|bos|> a d a d a d a d <|eos|>
+local <|bos|> b d b d b d b d <|eos|>
+local <|bos|> c d c d c d c d <|eos|>
+echo <|bos|> b b a b c b <|eos|> => <|free|> <|bos|> b b a b c b
+echo <|bos|> b b b b c a <|eos|> => <|free|> <|bos|> b b b b c a
+echo <|bos|> c a b a a c <|eos|> => <|free|> <|bos|> c a b a a c
+echo <|bos|> b c c c a b <|eos|> => <|free|> <|bos|> b c c c a b
+echo <|bos|> a c a c b b <|eos|> => <|free|> <|bos|> a c a c b b
+echo <|bos|> c a b b b c <|eos|> => <|free|> <|bos|> c a b b b c
+echo <|bos|> c a c b b c <|eos|> => <|free|> <|bos|> c a c b b c
+echo <|bos|> b a c a a c <|eos|> => <|free|> <|bos|> b a c a a c
+echo <|bos|> b c c c a c <|eos|> => <|free|> <|bos|> b c c c a c
+echo <|bos|> b b a c b c <|eos|> => <|free|> <|bos|> b b a c b c
+echo <|bos|> a a c a a a <|eos|> => <|free|> <|bos|> a a c a a a
+echo <|bos|> c b a a b c <|eos|> => <|free|> <|bos|> c b a a b c
+echo <|bos|> b a b c b c <|eos|> => <|free|> <|bos|> b a b c b c
+echo <|bos|> a c b c a c <|eos|> => <|free|> <|bos|> a c b c a c
+echo <|bos|> c c b b a c <|eos|> => <|free|> <|bos|> c c b b a c
+echo <|bos|> b b c a b a <|eos|> => <|free|> <|bos|> b b c a b a
+echo <|bos|> a a a c c b <|eos|> => <|free|> <|bos|> a a a c c b
+echo <|bos|> b a a c a a <|eos|> => <|free|> <|bos|> b a a c a a
+echo <|bos|> a a c c c b <|eos|> => <|free|> <|bos|> a a c c c b
+echo <|bos|> c c b c a a <|eos|> => <|free|> <|bos|> c c b c a a
+echo <|bos|> c c b c b b <|eos|> => <|free|> <|bos|> c c b c b b
+echo <|bos|> b c c c b a <|eos|> => <|free|> <|bos|> b c c c b a
+echo <|bos|> b c a b c c <|eos|> => <|free|> <|bos|> b c a b c c
+echo <|bos|> b a a a c b <|eos|> => <|free|> <|bos|> b a a a c b
+echo <|bos|> a c a b a b <|eos|> => <|free|> <|bos|> a c a b a b
+echo <|bos|> b a a a c a <|eos|> => <|free|> <|bos|> b a a a c a
+echo <|bos|> a c c c c c <|eos|> => <|free|> <|bos|> a c c c c c
+echo <|bos|> a a a c a c <|eos|> => <|free|> <|bos|> a a a c a c
+echo <|bos|> c a b a b a <|eos|> => <|free|> <|bos|> c a b a b a
+echo <|bos|> a c a a a c <|eos|> => <|free|> <|bos|> a c a a a c
+echo <|bos|> a b a c a c <|eos|> => <|free|> <|bos|> a b a c a c
+echo <|bos|> a c b c a b <|eos|> => <|free|> <|bos|> a c b c a b
+echo <|bos|> a a a c b b <|eos|> => <|free|> <|bos|> a a a c b b
+echo <|bos|> b a a c b a <|eos|> => <|free|> <|bos|> b a a c b a
+echo <|bos|> c a c b a b <|eos|> => <|free|> <|bos|> c a c b a b
+echo <|bos|> b c b c a c <|eos|> => <|free|> <|bos|> b c b c a c
+echo <|bos|> c a a c a a <|eos|> => <|free|> <|bos|> c a a c a a
+echo <|bos|> b c b a c b <|eos|> => <|free|> <|bos|> b c b a c b
+echo <|bos|> c a a b c b <|eos|> => <|free|> <|bos|> c a a b c b
+echo <|bos|> c c b c b b <|eos|> => <|free|> <|bos|> c c b c b b

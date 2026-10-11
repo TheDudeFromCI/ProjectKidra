@@ -1,30 +1,28 @@
 # Project Kidra
 
-An experimental PyTorch project. Strictly typed (mypy `--strict`), tested with pytest,
-with SQLite (stdlib) for storage and an optional vector database (ChromaDB).
+An experimental toy LLM that mixes together several different niche ideas for possible LLM architectures.
 
 ## Usage
 
 ```sh
-python -m venv .venv   # first time only
-./build.sh             # install deps, type-check, build package
-./run.sh               # run the app
-./test.sh              # mypy + pytest
-pip install -e .[vector]   # optional: vector database support
+./scripts/build.sh  # install deps, type-check, build package
+./scripts/test.sh   # mypy + pytest
+./scripts/run.sh    # run the app
 ```
 
 ## Layout
 
-- `project_kidra/` – source package (`app.py` entry point, `db.py` SQLite helpers)
+- `project_kidra/` – source package (`app.py` entry point)
 - `tests/` – unit tests
 
 ## Mixture of Experts model
 
-`project_kidra.moe.MoEModel` combines causal multi-head self-attention with
-top-k routed feed-forward experts. Each token can attend to itself and up to
+`project_kidra.model.AgentModel`, configured with `project_kidra.model.Config`,
+combines causal multi-head self-attention with top-k routed feed-forward experts.
+Each token can attend to itself and up to
 `context_window - 1` preceding tokens. Inputs may be longer than the window;
 sinusoidal positions encode token order, and attention remains local. Configure
-the number of heads and context window with `MoEConfig`, then use `Trainer`
+the number of heads and context window with `Config`, then use `Trainer`
 with token inputs and same-shaped next-token targets to train the model.
 
 ## Continuous token-level training
@@ -36,15 +34,11 @@ next token, and wraps to the beginning at the end. Out-of-vocabulary words becom
 ### Building a corpus
 
 ```sh
-python -m project_kidra.build_corpus texts/ more.txt --output corpus.npy   # dirs are searched for *.txt
-python -m project_kidra.continuous_train corpus.npy --checkpoint kidra.pt
+# Simply point the corpus builder script to your .txt directories.
+# Any number of input directories can be supplied.
+./scripts/corpus.sh <input_dir1> <input_dir2> --output <output.npy>
 ```
-
-`build_corpus` writes `corpus.npy` plus a `corpus.json` sidecar (token counts, unknown
-rate, sources, tokenizer fingerprint). `continuous_train` loads a `.npy` corpus directly
-and refuses it if the tokenizer vocabulary has changed; any other file is tokenized
-as raw text at startup. Model and optimizer state are periodically
-saved so training can resume:
+## Resume training
 
 ```sh
 python -m project_kidra.continuous_train corpus.txt --checkpoint kidra.pt
