@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import LayerNorm, Linear, Module, ModuleList
 from torch.nn import functional as F
@@ -63,7 +62,12 @@ class LayerBlock(Module):
         h = self.out(a.transpose(1, 2).reshape(batch_size, 1, -1))
         x2 = x + h
 
-        tokens = self.norm2(x2).reshape(-1, x2.shape[-1])
+        return self.feed_forward(x2)
+
+    def feed_forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        """Route all real tokens together and add the expert residual."""
+
+        tokens = self.norm2(x).reshape(-1, x.shape[-1])
         routing = self.router(tokens)
         routed = tokens.new_zeros(tokens.shape)
 
@@ -76,4 +80,4 @@ class LayerBlock(Module):
             weighted_output = expert_output * routing.weights[token_ids, slots].unsqueeze(-1)
             routed = routed.index_add(0, token_ids, weighted_output)
 
-        return x2 + routed.reshape_as(x2), routing.aux_loss
+        return x + routed.reshape_as(x), routing.aux_loss

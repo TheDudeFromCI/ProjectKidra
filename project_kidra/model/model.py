@@ -15,6 +15,7 @@ from torch.optim import AdamW
 from project_kidra.model.config import Config
 from project_kidra.model.exchange import GlobalExchange
 from project_kidra.model.layer import LayerBlock
+from project_kidra.model.training.sequence import SequenceBatch
 from project_kidra.model.window import ContextWindow
 
 
@@ -22,6 +23,8 @@ class AgentModel(Module):
     """Token model with residual attention, sparse MoE layers, and context windows."""
 
     def __init__(self, config: Config, free_token: int):
+        """Build shared layers and separate trunk/expert optimizers."""
+
         super().__init__()
         self.config = config
         self.free_token = free_token
@@ -47,6 +50,8 @@ class AgentModel(Module):
         self.expert_optimizer = AdamW(self.block.parameters(), lr=config.expert_lr)
 
     def _embedding(self, w: ContextWindow, token: int) -> Tensor:
+        """Embed a single input token and its window identity."""
+
         device = self.token_embeddings.weight.device
         tok: Tensor = torch.tensor([[token]], device=device, dtype=torch.long)
         wid: Tensor = torch.tensor([[w.id]], device=device, dtype=torch.long)
@@ -54,6 +59,8 @@ class AgentModel(Module):
         return cast(Tensor, self.proj(embedded))
 
     def forward(self) -> list[float]:
+        """Train one token per open window, generating unspecified targets."""
+
         if len(self.windows) == 0:
             return []
 
@@ -115,7 +122,55 @@ class AgentModel(Module):
 
         return values
 
+    def train_chunk(
+        self,
+        max_tokens: int = 32,
+        updates: dict[ContextWindow, list[int]] | None = None,
+    ) -> list[float]:
+        """Train all scheduled targets in one forward/backward/optimizer step.
+
+        By default each window with pending targets advances up to max_tokens
+        times, at ticks 0, 1, ... . An explicit updates mapping supplies relative
+        ticks per window and overrides that default. Omitted windows stay idle
+        but their committed caches remain readable. Losses are returned in
+        mapping order, then target order, with one value per real token.
+        """
+
+        if max_tokens < 1:
+            raise ValueError("max_tokens must be positive")
+        if updates is None:
+            updates = {
+                w: list(range(min(max_tokens, len(w.pending)))) for w in self.windows if w.pending
+            }
+        batch = SequenceBatch(self, updates)
+        if not batch.windows:
+            return []
+        self.train()
+        self.trunk_optimizer.zero_grad(set_to_none=True)
+        self.expert_optimizer.zero_grad(set_to_none=True)
+        logits, aux_loss = batch.forward()
+        targets = torch.tensor(
+            [token for sequence in batch.targets for token in sequence],
+            device=logits.device,
+            dtype=torch.long,
+        )
+        losses = F.cross_entropy(logits, targets, reduction="none")
+        total = losses.mean() + self.config.aux_loss_weight * aux_loss
+        total.backward()  # type: ignore
+        self.trunk_optimizer.step()
+        self.expert_optimizer.step()
+        for window, sequence in zip(batch.windows, batch.targets):
+            window.position += len(sequence)
+            del window.pending[: len(sequence)]
+            for token in sequence:
+                window.append(token)
+        for window in self.windows:
+            window.detach_cache()
+        return cast(list[float], losses.detach().tolist())
+
     def open_window(self) -> ContextWindow:
+        """Allocate an independent context window with an available identity."""
+
         if not self.available_window_ids:
             raise RuntimeError("No available window IDs to open a new window.")
 

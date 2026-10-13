@@ -32,6 +32,12 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true", help="resume from --checkpoint")
     parser.add_argument("--checkpoint-interval", type=int, default=1000)
     parser.add_argument(
+        "--tokens-per-step",
+        type=int,
+        default=32,
+        help="maximum targets per window per optimizer step",
+    )
+    parser.add_argument(
         "--preview-tokens",
         type=int,
         default=50,
@@ -79,26 +85,38 @@ def main() -> int:
         model = AgentModel(config, tokenizer.free_token).to(device)
         print(f"Created model with {sum(p.numel() for p in model.parameters()):,} parameters")
 
-    start_time = time.time()
+    print("Starting preview...")
+    window = model.open_window()
+    for _ in range(512):
+        model.forward()
+        token = window.tokens[-1]
+        print(tokenizer.decode([token]), end="", flush=True)
+    model.close_window(window)
 
     print("Starting training loop...")
-    trainer = Trainer(model, corpus, 100)
+    trainer = Trainer(model, corpus, 20, tokens_per_step=args.tokens_per_step)
+
+    start_time = time.time()
 
     loops = 0
     while True:
         losses = trainer.step()
+        if not losses:
+            break
+
         loops += 1
         avg_loss = sum(losses) / len(losses)
 
         elapsed_time = time.time() - start_time
-        start_time = time.time()
-        toks = trainer.n_windows / elapsed_time
+        toks = len(losses) / elapsed_time
 
         print(
-            f"Loops: {loops}, Elapsed Time: {elapsed_time:.2f}s, Tokens/sec: {toks:.2f}, Avg Loss: {avg_loss / loops:.4f}"
+            f"Loops: {loops}, Elapsed Time: {elapsed_time:.2f}s, Tokens/sec: {toks:.2f}, Avg Loss: {avg_loss:.4f}"
         )
 
         if loops % args.checkpoint_interval == 0:
             Checkpoint.save(model, args.checkpoint)
+
+        start_time = time.time()
 
     return 0

@@ -15,6 +15,8 @@ class KVCache:
     limit: int
 
     def __init__(self, limit: int = 1024):
+        """Initialize an empty cache with a bounded retained history."""
+
         self.k = torch.zeros(1, 1, 1, 1)
         self.v = torch.zeros(1, 1, 1, 1)
         self.limit = limit
@@ -41,9 +43,13 @@ class KVCache:
         return current.shape[:-2] == new.shape[:-2] and current.shape[-1] == new.shape[-1]
 
     def detach(self) -> None:
+        """End gradient history at an optimizer-step boundary."""
+
         self.k = self.k.detach()
         self.v = self.v.detach()
 
     @property
     def length(self) -> int:
-        return self.k.shape[-2]
+        """Return the number of real entries, excluding the initial placeholder."""
+
+        return 0 if self._placeholder else self.k.shape[-2]

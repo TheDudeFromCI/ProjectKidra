@@ -37,8 +37,9 @@ class Checkpoint:
 
         model = AgentModel(Config(**state["config"]), state["free_token"])
         model.load_state_dict(state["model"])
+        # Move first: optimizer state is cast to the parameters' device on load.
+        model.to(device)
         model.trunk_optimizer.load_state_dict(state["trunk_optimizer"])
         model.expert_optimizer.load_state_dict(state["expert_optimizer"])
-        model.to(device)
 
         return model

@@ -43,7 +43,7 @@ class ContextWindow:
         if any(v < 0 or v >= self.vocab_size for v in tokens):
             raise ValueError("Token ID outside vocabulary")
 
-        self.pending = tokens
+        self.pending = list(tokens)
         return self
 
     def pop_pending(self) -> int:
