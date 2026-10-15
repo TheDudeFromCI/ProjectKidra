@@ -9,6 +9,7 @@ dependencies = ["torch", "numpy", "tokenizers", "tqdm"]
 
 [project.optional-dependencies]
 vector = ["chromadb"]
+qwen = ["torch>=2.4", "transformers>=4.51,<5", "accelerate>=1.0", "safetensors>=0.4"]
 dev = ["pytest", "pytest-cov", "mypy", "ruff", "types-tqdm"]
 
 [build-system]
@@ -28,3 +29,10 @@ pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
+
+[[tool.mypy.overrides]]
+module = ["tokenizers", "tokenizers.*"]
+ignore_missing_imports = true
+
+[tool.setuptools.package-data]
+project_kidra = ["py.typed", "assets/tokenizer.json"]

@@ -10,3 +10,6 @@ class CorpusMetadata:
     num_tokens: int
     sources: list[str]
     samples: int
+
+    max_windows: int = 1
+    format_version: int = 2

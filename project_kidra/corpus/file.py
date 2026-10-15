@@ -1,107 +1,74 @@
-import random
-import threading
-from collections.abc import Generator
-from pathlib import Path
+"""Lazy random access to grouped, tokenized corpus samples."""
 
-from project_kidra.corpus.builder import MAGIC_NUMBER
+import json
+import random
+import sqlite3
+from collections.abc import Iterator
+from contextlib import closing
+from pathlib import Path
+from typing import cast
+
+from project_kidra.corpus.builder import FORMAT_VERSION
+from project_kidra.corpus.metadata import CorpusMetadata
+from project_kidra.corpus.tokenizer import Tokenizer
 
 
 class CorpusFile:
-    """
-    A dynamic loader for prebuilt token corpora.
-
-    Loads samples as needed from the disk, keeping a portion preloaded into memory for efficiency.
-    Additional samples will be loaded asynchronously as needed.
-    """
+    """Load bounded batches of random samples without splitting their windows."""
 
     def __init__(self, path: str | Path, preload: int = 75) -> None:
-        """
-        Load a prebuilt token corpus from the specified file.
+        """Validate the version and persisted metadata before sampling."""
 
-        Args:
-            path: Path to the corpus file.
-            preload: The number of samples to keep preloaded into memory (default is 75).
-        """
-
-        self.path: Path = Path(path)
-        self.preload: int = preload
-        self.sample_locs: list[tuple[int, int]] = []
-        self.loaded_samples: list[list[int]] = []
-        self._condition: threading.Condition = threading.Condition()
-        self._loading: bool = False
-
-        with open(self.path, "rb") as f:
-            if f.read(len(MAGIC_NUMBER)) != MAGIC_NUMBER:
-                raise ValueError("invalid corpus file")
-
-            self.samples: int = int.from_bytes(f.read(4), "little")
-
-            for _ in range(self.samples):
-                offset = int.from_bytes(f.read(8), "little")
-                length = int.from_bytes(f.read(4), "little")
-                self.sample_locs.append((offset, length))
-
-            for _ in range(self.preload):
-                i = random.randint(0, self.samples - 1)
-                offset, length = self.sample_locs[i]
-
-                f.seek(offset)
-                token_bytes = f.read(length * 3)
-                tokens = [
-                    int.from_bytes(token_bytes[i : i + 3], "little")
-                    for i in range(0, len(token_bytes), 3)
-                ]
-
-                self.loaded_samples.append(tokens)
-
-    def __iter__(self) -> Generator[list[int]]:
-        while True:
-            self.__queue_async_loading()
-            self.__block_until_loaded()
-            with self._condition:
-                sample = self.loaded_samples.pop()
-            yield sample
-
-    def __block_until_loaded(self) -> None:
-        """Block until at least one sample is loaded into memory."""
-
-        with self._condition:
-            self._condition.wait_for(lambda: len(self.loaded_samples) > 0)
-
-    def __queue_async_loading(self) -> None:
-        """Queue asynchronous loading of additional samples into memory."""
-
-        with self._condition:
-            if self._loading or len(self.loaded_samples) > self.preload:
-                return
-
-            self._loading = True
-
-        threading.Thread(target=self.__load_worker, daemon=True).start()
-
-    def __load_worker(self) -> None:
-        """Load random samples from disk until the preload target is met."""
-
+        if preload < 1:
+            raise ValueError("preload must be positive")
+        self.path = Path(path).resolve()
+        self.preload = preload
+        if not self.path.is_file():
+            raise FileNotFoundError(self.path)
         try:
-            with open(self.path, "rb") as f:
-                while True:
-                    with self._condition:
-                        if len(self.loaded_samples) >= self.preload:
-                            # Clear atomically with the check so a new worker can start immediately.
-                            self._loading = False
-                            return
+            with closing(self._connect()) as connection:
+                if connection.execute("PRAGMA user_version").fetchone()[0] != FORMAT_VERSION:
+                    raise ValueError("unsupported corpus version; rebuild from JSON samples")
+                row = connection.execute("SELECT value FROM metadata").fetchone()
+                if row is None:
+                    raise ValueError("missing corpus metadata")
+                self.metadata = CorpusMetadata(**json.loads(row[0]))
+                count = connection.execute("SELECT count(*) FROM samples").fetchone()[0]
+                if count != self.metadata.samples or count < 1:
+                    raise ValueError("invalid or empty corpus")
+        except sqlite3.DatabaseError as error:
+            raise ValueError("invalid or legacy corpus; rebuild from JSON samples") from error
+        self.samples = self.metadata.samples
 
-                    offset, length = self.sample_locs[random.randint(0, self.samples - 1)]
-                    f.seek(offset)
-                    token_bytes = f.read(length * 3)
-                    tokens = [
-                        int.from_bytes(token_bytes[i : i + 3], "little")
-                        for i in range(0, len(token_bytes), 3)
-                    ]
+    def _connect(self) -> sqlite3.Connection:
+        """Open read-only so a typo never creates an empty corpus."""
 
-                    with self._condition:
-                        self.loaded_samples.append(tokens)
-                        self._condition.notify_all()
+        return sqlite3.connect(self.path.as_uri() + "?mode=ro", uri=True)
+
+    def validate_tokenizer(self, tokenizer: Tokenizer) -> None:
+        """Reject a corpus built with different token IDs or boundary tokens."""
+
+        if (
+            self.metadata.tokenizer_fingerprint != tokenizer.fingerprint
+            or self.metadata.vocab_size != tokenizer.vocab_size
+        ):
+            raise ValueError("corpus tokenizer mismatch; rebuild with the selected model tokenizer")
+
+    def __iter__(self) -> Iterator[list[list[int]]]:
+        """Sample indefinitely, with at most preload complete samples in memory."""
+
+        connection = self._connect()
+        try:
+            while True:
+                batch: list[list[list[int]]] = []
+                for _ in range(self.preload):
+                    index = random.randrange(1, self.samples + 1)
+                    row = connection.execute(
+                        "SELECT windows FROM samples WHERE id = ?", (index,)
+                    ).fetchone()
+                    if row is None:
+                        raise ValueError(f"missing corpus sample {index}")
+                    batch.append(cast(list[list[int]], json.loads(row[0])))
+                yield from batch
         finally:
-            with self._condition:
-                self._loading = False
+            connection.close()
