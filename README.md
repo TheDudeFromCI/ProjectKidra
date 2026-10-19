@@ -252,6 +252,20 @@ and construct explicit global attention masks. Global attention still scales
 with all open windows' memory. Reduce `--tokens-per-step` to fit available VRAM;
 this change does not remove the global attention bottleneck.
 
+## Timed multi-window toy experiment
+
+The [diagnostic matrix](docs/timed-matrix.md) adds 68 matched experiments, an
+independent single-tick execution path, full-trajectory gradients, stage-level
+metrics, and a concurrent scheduler with checkpoint recovery. Prepare once,
+then rerun the scheduler command to continue interrupted work and skip completed
+experiments.
+
+The `project_kidra.timed` commands generate event-ordered JSONL content streams,
+train a 991,462-parameter native model with sample-level gradient accumulation,
+and evaluate greedy rollouts with a cross-window attention ablation. See
+[the setup, protocol, and run commands](docs/timed-toy.md). This experiment is
+prepared but has not been run; learning quality is unmeasured.
+
 ## License
 
 MIT – see [LICENSE](LICENSE). Qwen3 model weights retain their upstream Apache-2.0

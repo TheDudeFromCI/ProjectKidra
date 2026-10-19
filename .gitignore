@@ -37,3 +37,7 @@ htmlcov/
 corpus.json
 corpus.npy
 *.pt
+
+# Generated toy datasets and experiment outputs
+data/
+runs/

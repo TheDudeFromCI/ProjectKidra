@@ -23,10 +23,13 @@ class SequenceBatch:
     Thus same-tick inputs are visible, but same-tick targets are not.
     """
 
-    def __init__(self, model: AgentModel, updates: dict[ContextWindow, list[int]]) -> None:
+    def __init__(
+        self, model: AgentModel, updates: dict[ContextWindow, list[int]], cross_window: bool = True
+    ) -> None:
         """Validate all updates before changing any window or optimizer state."""
 
         self.model = model
+        self.cross_window = cross_window
         self.windows: list[ContextWindow] = []
         self.ticks: list[Tensor] = []
         self.targets: list[list[int]] = []
@@ -140,6 +143,12 @@ class SequenceBatch:
                     )
                     global_keys.append(memory_k + identity)
                     global_values.append(memory_v)
+                    if not self.cross_window:
+                        owners = torch.cat([
+                            torch.full((n,), w.id, device=device)
+                            for w, n in zip(self.windows, self.lengths)
+                        ])
+                        mask = mask & (owners == window.id)[:, None]
                     global_masks.append(mask)
                 exchange = model.full_attn
                 global_q = (
